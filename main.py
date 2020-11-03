@@ -59,6 +59,45 @@ def replace_ids(domain, token, task):
     return task['task']['name'].replace('\%idf\%', parent_id).replace(
         '\%id\%', task_id)
 
+
+def replace_confluence_links(text, config, task):
+    """
+    Replace url to Confluence with article title.
+
+    Args:
+        - text - processing text, str;
+        - config - config from ini file, dict;
+        - is_task - processing text from task description(True)
+                    or from comment(False), boolean;
+
+    return processed text, str.
+    """
+    domain = config['confluence']['domain']
+    login = config['confluence']['login']
+    token = config['confluence']['token']
+    content_type = {'Content-Type': 'application/json'}
+
+    https://netping.atlassian.net/wiki/spaces/PROJ/pages/2471690243/DKSF708v.1
+    regexp = r'(?P<link>[^(\"\']http[s]{,1}://%s/wiki/spaces/[a-zA-Z0-9]+/pages/(?P<content_id>[0-9]+)[/\w]*)' % domain.replace('.', '\.')
+
+    links = dict()
+    for link, content_id in re.findall(regexp, text):
+        link = link.strip().strip('\n')
+        if link not in links:
+            content = requests.get(
+                'https://netping.atlassian.net/wiki/rest/api/content/{}'.format(content_id),
+                auth=(login, token)).json()
+            links[link] = content['title']
+
+    for link, title in links:
+        if task:
+            text = text.replace(link, f'[{title}]({link})')
+        else:
+            text = text.replace('>' + link + '<', '>' + title + '<')
+
+    return text
+
+
 try:
     @post('/webhook')
     def calback():
@@ -192,6 +231,14 @@ try:
                          'текущей и родительской задач - {}').format(e))
                     errors.exception(traceback.format_exc())
 
+                try:
+                    text_task = replace_confluence_links(text_task, config, True)
+                except Exception as e:
+                    errors.exception(
+                        ('Ошибка при подстановке названий статей '
+                         'из Confluence - {}').format(e))
+                    errors.exception(traceback.format_exc())
+
                 requests.put('https://{}/tasks/{}.json'.format(domain, event['task']['id']),
                              json={
                                  'todo-item': {
@@ -202,6 +249,14 @@ try:
                              auth=(token, ''))
 
             elif 'comment' in event:
+                try:
+                    text = replace_confluence_links(text, config, False)
+                except Exception as e:
+                    errors.exception(
+                        ('Ошибка при подстановке названий статей '
+                         'из Confluence - {}').format(e))
+                    errors.exception(traceback.format_exc())
+
                 requests.put('https://{}/comments/{}.json'.format(domain, event['comment']['id']),
                              json={'comment': {'body': text, 'content-type': event['comment']['contentType']}},
                              headers=content_type,
