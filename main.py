@@ -63,6 +63,7 @@ def replace_ids(domain, token, task):
 def replace_confluence_links(text, config, task):
     """
     Replace url to Confluence with article title.
+    Working only with cloud confluence.
 
     Args:
         - text - processing text, str;
@@ -77,7 +78,6 @@ def replace_confluence_links(text, config, task):
     token = config['confluence']['token']
     content_type = {'Content-Type': 'application/json'}
 
-    https://netping.atlassian.net/wiki/spaces/PROJ/pages/2471690243/DKSF708v.1
     regexp = r'(?P<link>[^(\"\']http[s]{,1}://%s/wiki/spaces/[a-zA-Z0-9]+/pages/(?P<content_id>[0-9]+)[/\w]*)' % domain.replace('.', '\.')
 
     links = dict()
