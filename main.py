@@ -30,6 +30,35 @@ FORMATTER = logging.Formatter('%(levelname)s %(asctime)s %(message)s')
 FH.setFormatter(FORMATTER)
 ERRORS_FH.setFormatter(FORMATTER)
 
+
+def replace_ids(domain, token, task):
+    """
+    Replace in task title:
+        - %id% with unique task number;
+        - %idf% with unique parent task number, current if haven't parent.
+
+    Args:
+        - domain - teamwork address without http/https and slashs;
+        - token - token for authentication on teamwork server;
+        - task - task object, recieved on webhook, dict.
+
+    return task title with raplaces str
+    """
+    tasks = dict()
+    task_id = task['task']['id']
+    if task['task']['parentId']:
+        while True:
+            taskinfo = requests.get(
+                'https://{}/tasks/{}.json'.format(domain, parent_id),
+                auth=(token, '')).json()
+            if not taskinfo['todo-item']['parentTaskId']:
+                parent_id = taskinfo['todo-item']['id']
+                break
+    else:
+        parent_id = task_id
+    return task['task']['name'].replace('\%idf\%', parent_id).replace(
+        '\%id\%', task_id)
+
 try:
     @post('/webhook')
     def calback():
@@ -154,8 +183,21 @@ try:
             #print(text_task)
 
             if 'task' in event:
+                try:
+                    title = replace_ids(event)
+                except Exception as e:
+                    title = event['task']['name']
+                    errors.exception(
+                        ('Ошибка при подстановке номеров '
+                         'текущей и родительской задач - {}').format(e))
+                    errors.exception(traceback.format_exc())
+
                 requests.put('https://{}/tasks/{}.json'.format(domain, event['task']['id']),
-                             json={'todo-item': {'description': text_task}},
+                             json={
+                                 'todo-item': {
+                                     'description': text_task,
+                                     'content': title,
+                                 }},
                              headers=content_type,
                              auth=(token, ''))
 
