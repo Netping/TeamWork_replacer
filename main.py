@@ -139,81 +139,90 @@ try:
 
         if links != []:
             for link in links:
-                link = link.strip()
-                #print(link)
-                link = link.replace('<', '').replace('>', '')
-                #print(link)
-                taskid = re.findall(r'tasks/[0-9]{,15}', link)[0]
-                #print(taskid)
-                taskid = re.findall(r'[0-9]{1,15}', taskid)[0]
-                #print(taskid)
-                taskinfo = requests.get('https://{}/tasks/{}.json'.format(domain, taskid),
-                                        auth=(token, '')).json()
+                try:
+                    link = link.strip()
+                    #print(link)
+                    link = link.replace('<', '').replace('>', '')
+                    #print(link)
+                    taskid = re.findall(r'tasks/[0-9]{,15}', link)[0]
+                    #print(taskid)
+                    taskid = re.findall(r'[0-9]{1,15}', taskid)[0]
+                    #print(taskid)
+                    taskinfo = requests.get('https://{}/tasks/{}.json'.format(domain, taskid),
+                                            auth=(token, '')).json()
 
-                log.debug('Получили информацию о задаче c id {} - {}'.format(taskid, taskinfo))
-                
-                #print(taskinfo)
+                    log.debug('Получили информацию о задаче c id {} - {}'.format(taskid, taskinfo))
+                    
+                    #print(taskinfo)
 
-                title = taskinfo['todo-item']['content']
-                
-                #print(title)
-                
-                title = title.rstrip()
-                
-                #print(title)
-                
-                if 'task' in event:
-                    title = f'[{title}]({link})'
+                    title = taskinfo['todo-item']['content']
                     
-                    ##print(title)
+                    #print(title)
                     
-                    pos = text.find(link)
+                    title = title.rstrip()
                     
-                    pos_end = pos + len(link)
+                    #print(title)
                     
-                    text_with_first_link = text[0:pos_end]
-                    
-                    #print(text_with_first_link)
-                    
-                    other_part_of_text = pos_end
-                    
-                    text_end = len(text)
-                    
-                    text_after_link = text[other_part_of_text:text_end]
-                    
-                    #print(text_after_link)
-                    
-                    text_with_first_link = text_with_first_link.replace(link, title)
-                    
-                    #print(text_with_first_link)
-                    
-                    text_array_new.append(text_with_first_link)
-                    
-                    #print(text_array_new)
-                    
-                    text = text_after_link
-                    
-                    #print(text)
-                    
-                    #text = text.replace(link, title, 1)
-                    
-                    ##print(text)
+                    if 'task' in event:
+                        title = f'[{title}]({link})'
+                        
+                        ##print(title)
+                        
+                        pos = text.find(link)
+                        
+                        pos_end = pos + len(link)
+                        
+                        text_with_first_link = text[0:pos_end]
+                        
+                        #print(text_with_first_link)
+                        
+                        other_part_of_text = pos_end
+                        
+                        text_end = len(text)
+                        
+                        text_after_link = text[other_part_of_text:text_end]
+                        
+                        #print(text_after_link)
+                        
+                        text_with_first_link = text_with_first_link.replace(link, title)
+                        
+                        #print(text_with_first_link)
+                        
+                        text_array_new.append(text_with_first_link)
+                        
+                        #print(text_array_new)
+                        
+                        text = text_after_link
+                        
+                        #print(text)
+                        
+                        #text = text.replace(link, title, 1)
+                        
+                        ##print(text)
 
-                    # ~ title = ' ' + event['task']['name']
-                    # ~ links = re.findall(regexp, title)
-                    # ~ for link in links:
-                        # ~ taskid = re.findall(r'tasks/[0-9]{,15}', link)[0]
-                        # ~ taskid = re.findall(r'[0-9]{1,15}', taskid)[0]
-                        # ~ taskinfo = requests.get('https://{}/tasks/{}.json'.format(domain, taskid),
-                                                # ~ auth=(token, '')).json()
-                        # ~ t = taskinfo['todo-item']['content']
-                        # ~ t = f'[{t}]({link})'
-                        # ~ title = title.replace(link, t)
+                        # ~ title = ' ' + event['task']['name']
+                        # ~ links = re.findall(regexp, title)
+                        # ~ for link in links:
+                            # ~ taskid = re.findall(r'tasks/[0-9]{,15}', link)[0]
+                            # ~ taskid = re.findall(r'[0-9]{1,15}', taskid)[0]
+                            # ~ taskinfo = requests.get('https://{}/tasks/{}.json'.format(domain, taskid),
+                                                    # ~ auth=(token, '')).json()
+                            # ~ t = taskinfo['todo-item']['content']
+                            # ~ t = f'[{t}]({link})'
+                            # ~ title = title.replace(link, t)
 
-                elif 'comment' in event:
-                    text = text.replace('>' + link + '<', '>' + title + '<')
-                    
-                    #print(text)
+                    elif 'comment' in event:
+                        temp = text.replace('>' + link + '<', '>' + title + '<')
+                        if text == temp:
+                        errors.error(
+                            ('Ошибка при подстановке ссылки {}\nИсходный текст: {}\nОбработанный: {}').format(link, text, temp))
+                        text = temp
+                        
+                        #print(text)
+                except Exception as e:
+                    errors.exception(
+                        ('Ошибка при подстановке ссылки {} - {}').format(link, e))
+                    errors.exception(traceback.format_exc())
                     
             log.info('Заменено %i ссылок' % len(links))
             
