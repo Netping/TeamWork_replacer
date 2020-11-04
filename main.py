@@ -31,31 +31,33 @@ FH.setFormatter(FORMATTER)
 ERRORS_FH.setFormatter(FORMATTER)
 
 
-def replace_ids(domain, token, task):
+def replace_ids(text, task_id, parent_id, config):
     """
     Replace in task title:
         - %id% with unique task number;
         - %idf% with unique parent task number, current if haven't parent.
 
     Args:
-        - domain - teamwork address without http/https and slashs;
-        - token - token for authentication on teamwork server;
-        - task - task object, recieved on webhook, dict.
+        - task - task object, recieved on webhook, dict;
+        - config - config from ini file, dict;
 
     return task title with raplaces str
     """
-    tasks = dict()
-    task_id = task['task']['id']
-    if task['task']['parentId']:
+    domain = config['teamwork']['domain']
+    token = config['teamwork']['token']
+    content_type = {'Content-Type': 'application/json'}
+
+    if parent_id:
         while True:
             taskinfo = requests.get(
                 'https://{}/tasks/{}.json'.format(domain, parent_id),
                 auth=(token, '')).json()
             if not taskinfo['todo-item']['parentTaskId']:
-                parent_id = taskinfo['todo-item']['id']
                 break
+            parent_id = taskinfo['todo-item']['parentTaskId']
     else:
         parent_id = task_id
+        
     return task['task']['name'].replace('\%idf\%', parent_id).replace(
         '\%id\%', task_id)
 
@@ -223,7 +225,8 @@ try:
 
             if 'task' in event:
                 try:
-                    title = replace_ids(event)
+                    title = replace_ids(task['task']['name'], task['task']['id'],
+                                        task['task']['parentId'], config)
                 except Exception as e:
                     title = event['task']['name']
                     errors.exception(
@@ -258,7 +261,11 @@ try:
                     errors.exception(traceback.format_exc())
 
                 requests.put('https://{}/comments/{}.json'.format(domain, event['comment']['id']),
-                             json={'comment': {'body': text, 'content-type': event['comment']['contentType']}},
+                             json={'comment': {
+                                 'body': text,
+                                 'notify': 'true',
+                                 'content-type': event['comment']['contentType']
+                                 }},
                              headers=content_type,
                              auth=(token, ''))
 
