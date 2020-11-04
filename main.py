@@ -277,6 +277,25 @@ try:
                              headers=content_type,
                              auth=(token, ''))
 
+                try:
+                    task = requests.get('https://{}/tasks/{}.json'.format(domain, event['comment']['objectId']),
+                                 headers=content_type,
+                                 auth=(token, '')).json()
+
+                    requests.put('https://{}/tasks/{}.json'.format(domain, task['todo-item']['id']),
+                                 json={
+                                     'todo-item': {
+                                         'commentFollowerSummary': task['todo-item']['changeFollowerSummary'],
+                                     }},
+                                 headers=content_type,
+                                 auth=(token, ''))
+                except Exception as e:
+                    errors.exception(
+                        ('Ошибка при обновлении списка получателя(-ей) уведомлений '
+                         'о комментариях по умолчанию - {}').format(e))
+                    errors.exception(traceback.format_exc())
+
+
     if __name__ == '__main__':
         print('Script started. Version ' + VERSION)
         log.info('Поднимаем сервер')
