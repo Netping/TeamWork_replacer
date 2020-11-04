@@ -272,7 +272,6 @@ try:
                 requests.put('https://{}/comments/{}.json'.format(domain, event['comment']['id']),
                              json={'comment': {
                                  'body': text,
-                                 'notify': 'true',
                                  'content-type': event['comment']['contentType']
                                  }},
                              headers=content_type,
