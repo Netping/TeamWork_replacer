@@ -80,18 +80,18 @@ def replace_confluence_links(text, config, task):
     token = config['confluence']['token']
     content_type = {'Content-Type': 'application/json'}
 
-    regexp = r'(?P<link>[^(\"\']http[s]{,1}://%s/wiki/spaces/[a-zA-Z0-9]+/pages/(?P<content_id>[0-9]+)[/\w]*)' % domain.replace('.', '\.')
+    regexp = r'(?P<link>[^(\"\']http[s]{,1}://%s/wiki/spaces/[a-zA-Z0-9]+/pages/(?P<content_id>[0-9]+)[/\w\.\,]*)' % domain.replace('.', '\.')
 
     links = dict()
     for link, content_id in re.findall(regexp, text):
-        link = link.strip().strip('\n')
+        link = link.strip().strip('\n').strip('<').strip('>')
         if link not in links:
             content = requests.get(
                 'https://netping.atlassian.net/wiki/rest/api/content/{}'.format(content_id),
                 auth=(login, token)).json()
             links[link] = content['title']
 
-    for link, title in links:
+    for link, title in links.items():
         if task:
             text = text.replace(link, f'[{title}]({link})')
         else:
