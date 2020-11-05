@@ -286,6 +286,7 @@ try:
                                  json={
                                      'todo-item': {
                                          'commentFollowerSummary': task['todo-item']['changeFollowerSummary'],
+                                         'commentFollowerIds': task['todo-item']['changeFollowerIds'],
                                      }},
                                  headers=content_type,
                                  auth=(token, ''))
