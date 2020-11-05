@@ -269,33 +269,19 @@ try:
                          'из Confluence - {}').format(e))
                     errors.exception(traceback.format_exc())
 
+                task = requests.get('https://{}/tasks/{}.json'.format(
+                    domain, event['comment']['objectId']),
+                                    headers=content_type,
+                                    auth=(token, '')).json()
+
                 requests.put('https://{}/comments/{}.json'.format(domain, event['comment']['id']),
                              json={'comment': {
                                  'body': text,
+                                 'notify': task['todo-item']['commentFollowerIds'],
                                  'content-type': event['comment']['contentType']
                                  }},
                              headers=content_type,
                              auth=(token, ''))
-
-                try:
-                    task = requests.get('https://{}/tasks/{}.json'.format(domain, event['comment']['objectId']),
-                                 headers=content_type,
-                                 auth=(token, '')).json()
-
-                    requests.put('https://{}/tasks/{}.json'.format(domain, task['todo-item']['id']),
-                                 json={
-                                     'todo-item': {
-                                         'commentFollowerSummary': task['todo-item']['changeFollowerSummary'],
-                                         'commentFollowerIds': task['todo-item']['changeFollowerIds'],
-                                     }},
-                                 headers=content_type,
-                                 auth=(token, ''))
-                except Exception as e:
-                    errors.exception(
-                        ('Ошибка при обновлении списка получателя(-ей) уведомлений '
-                         'о комментариях по умолчанию - {}').format(e))
-                    errors.exception(traceback.format_exc())
-
 
     if __name__ == '__main__':
         print('Script started. Version ' + VERSION)
