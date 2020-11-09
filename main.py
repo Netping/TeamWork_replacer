@@ -214,9 +214,9 @@ try:
                     elif 'comment' in event:
                         temp = text.replace('>' + link + '<', '>' + title + '<')
                         if text == temp:
-                        errors.error(
-                            ('Ошибка при подстановке ссылки {}\nИсходный текст: {}\nОбработанный: {}').format(link, text, temp))
-                        text = temp
+                            errors.error(
+                                ('Ошибка при подстановке ссылки {}\nИсходный текст: {}\nОбработанный: {}').format(link, text, temp))
+                            text = temp
                         
                         #print(text)
                 except Exception as e:
