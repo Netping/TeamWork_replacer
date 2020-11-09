@@ -269,19 +269,39 @@ try:
                          'из Confluence - {}').format(e))
                     errors.exception(traceback.format_exc())
 
+                notificate = config['teamwork'].getboolean('comment_notificate')
+
                 task = requests.get('https://{}/tasks/{}.json'.format(
                     domain, event['comment']['objectId']),
                                     headers=content_type,
                                     auth=(token, '')).json()
 
+                data = {
+                    'comment': {
+                        'body': text,
+                        'content-type': event['comment']['contentType'],
+                    }
+                }
+
+                if notificate:
+                    data['comment']['notify'] = task['todo-item']['commentFollowerIds']
+
                 requests.put('https://{}/comments/{}.json'.format(domain, event['comment']['id']),
-                             json={'comment': {
-                                 'body': text,
-                                 'notify': task['todo-item']['commentFollowerIds'],
-                                 'content-type': event['comment']['contentType']
-                                 }},
+                             json=data,
                              headers=content_type,
                              auth=(token, ''))
+
+                if not notificate:
+                    # На момент подготовки версии 3.0 API Teamwork сбрасывало поле changeFollowerIds
+                    # на notify последнего (обновления) комментария. Соответственно, если уже выставили
+                    # список уведомления при обновлении комментария еще раз обновлять задачу не нужно.
+                    requests.put('https://{}/tasks/{}.json'.format(domain, task['todo-item']['id']),
+                                 json={
+                                   'todo-item': {
+                                       'commentFollowerIds': task['todo-item']['changeFollowerIds'],
+                                   }},
+                                 headers=content_type,
+                                 auth=(token, ''))
 
     if __name__ == '__main__':
         print('Script started. Version ' + VERSION)
