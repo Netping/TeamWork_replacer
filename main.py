@@ -6,7 +6,7 @@ import traceback
 import requests
 from bottle import post, request, run
 
-VERSION = '2.1'
+VERSION = '3.0'
 
 #print('script started')
 
