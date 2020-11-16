@@ -1,17 +1,52 @@
+import argparse
 import os
 import re
-import configparser
 import logging
 import traceback
 import requests
 from bottle import post, request, run
 
+
 VERSION = '3.0'
 
-#print('script started')
+parser = argparse.ArgumentParser(description=f'Teamwork replacer {VERSION}.')
+parser.add_argument('--teamwork-domain', type=str, help='Teamwork domain. Example, smthn.teamwork.com', required=True)
+parser.add_argument('--teamwork-token', type=str, help='Teamwork token', required=True)
+parser.add_argument('--confluence-domain', type=str, help='Confluence domain. Example, smthn.atlassian.net', required=True)
+parser.add_argument('--confluence-login', type=str, help='Confluence login', required=True)
+parser.add_argument('--confluence-token', type=str, help='Confluence token', required=True)
+parser.add_argument('--host', type=str, default='0.0.0.0',
+                    help=('Server address to bind to. Pass 0.0.0.0 to listens '
+                          'on all interfaces including the external one. '
+                          '(default: 0.0.0.0)'))
+parser.add_argument('--port', type=int, default=8431,
+                    help=('Server port to bind to. '
+                          'Values below 1024 require root privileges. '
+                          '(default: 8431)'))
+parser.add_argument('--log-level', type=int, default=20,
+                    help=('Log level, integer value: 50 - critical, 40 - error, 30 - warning, '
+                          '20 - info, 10 - debug, 0 - notset. (default: 20)'))
+config = parser.parse_args()
+config = {
+    'general': {
+        'log_level': config.log_level,
+    },
+    'teamwork': {
+        'domain': config.teamwork_domain,
+        'token': config.teamwork_token,
+    },
+    'confluence': {
+        'domain': config.confluence_domain,
+        'login': config.confluence_login,
+        'token': config.confluence_token,
+    },
+    'route': {
+        'host': config.host,
+        'port': config.port,
+    },
+}
 
-config = configparser.ConfigParser()
-config.read('config.ini')
+#print('script started')
 
 errors = logging.getLogger("errors")
 log = logging.getLogger("main")
