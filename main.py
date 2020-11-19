@@ -160,7 +160,7 @@ try:
 
         #regexp = r'[^(\"\']http[s]{,1}://%s/[#/]{,2}tasks/[0-9]{,15}' % domain.replace('.', '\.')
         
-        regexp = r'[^(\"\']http[s]{,1}://%s/[#/]{,3}tasks/[0-9]{,15}[\?c=[0-9]{,15}]{,1}' % domain.replace('.', '\.')
+        regexp = r'[^(\"\']http[s]{,1}://%s/[#/]{,3}[projects/[0-9]{,15}/]?tasks/[0-9]{,15}[\?c=[0-9]{,15}]{,1}' % domain.replace('.', '\.')
         
         #print(regexp)
         
