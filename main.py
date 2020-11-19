@@ -251,7 +251,7 @@ try:
                         if text == temp:
                             errors.error(
                                 ('Ошибка при подстановке ссылки {}\nИсходный текст: {}\nОбработанный: {}').format(link, text, temp))
-                            text = temp
+                        text = temp
                         
                         #print(text)
                 except Exception as e:
