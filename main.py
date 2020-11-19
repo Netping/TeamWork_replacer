@@ -115,7 +115,7 @@ def replace_confluence_links(text, config, task):
     token = config['confluence']['token']
     content_type = {'Content-Type': 'application/json'}
 
-    regexp = r'(?P<link>[^(\"\']http[s]{,1}://%s/wiki/spaces/[a-zA-Z0-9]+/pages/(?P<content_id>[0-9]+)[/\w\.\,]*)' % domain.replace('.', '\.')
+    regexp = r'(?P<link>[^(\"\']http[s]{,1}://%s/wiki/spaces/[a-zA-Z0-9]+/pages/(?P<content_id>[0-9]+)[/\w\.\,\+\-\_]*)' % domain.replace('.', '\.')
 
     links = dict()
     for link, content_id in re.findall(regexp, text):
