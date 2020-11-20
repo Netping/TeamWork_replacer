@@ -190,6 +190,10 @@ try:
                     
                     #print(taskinfo)
 
+                    if taskinfo.get('error'):
+                        errors.error('Ошибка получения информации о задаче c id {} - {}'.format(taskid, taskinfo))
+                        continue
+
                     title = taskinfo['todo-item']['content']
                     
                     #print(title)
