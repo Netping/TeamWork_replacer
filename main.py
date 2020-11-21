@@ -253,12 +253,9 @@ try:
                             # ~ title = title.replace(link, t)
 
                     elif 'comment' in event:
-                        temp = text.replace('>' + link + '<', '>' + title + '<')
-                        if text == temp:
-                            errors_links.append(link)
-                            errors.error(
-                                ('Ошибка при подстановке ссылки {}\nИсходный текст: {}\nОбработанный: {}').format(link, text, temp))
-                        text = temp
+                        text = re.sub(r'(<\s*a.*>)' + link.replace('.', '\.') + r'(\s.*)?' + '(<\s*/\s*a\s*>)',
+                                      r'\1%s\3\2' % title,
+                                      text)
                         
                         #print(text)
                 except Exception as e:
