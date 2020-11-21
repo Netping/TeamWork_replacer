@@ -171,6 +171,7 @@ try:
         #print(links)
         
         text_array_new = []
+        errors_links = []
 
         if links != []:
             for link in links:
@@ -192,6 +193,7 @@ try:
 
                     if taskinfo.get('error'):
                         errors.error('Ошибка получения информации о задаче c id {} - {}'.format(taskid, taskinfo))
+                        errors_links.append(link)
                         continue
 
                     title = taskinfo['todo-item']['content']
@@ -253,6 +255,7 @@ try:
                     elif 'comment' in event:
                         temp = text.replace('>' + link + '<', '>' + title + '<')
                         if text == temp:
+                            errors_links.append(link)
                             errors.error(
                                 ('Ошибка при подстановке ссылки {}\nИсходный текст: {}\nОбработанный: {}').format(link, text, temp))
                         text = temp
@@ -263,7 +266,7 @@ try:
                         ('Ошибка при подстановке ссылки {} - {}').format(link, e))
                     errors.exception(traceback.format_exc())
                     
-            log.info('Заменено %i ссылок' % len(links))
+            log.info('Заменено %i ссылок' % len(links) - len(errors_links))
             
             #print(len(links))
             
