@@ -7,7 +7,7 @@ import requests
 from bottle import post, request, run
 
 
-VERSION = '3.4'
+VERSION = '3.5'
 
 parser = argparse.ArgumentParser(description=f'Teamwork replacer {VERSION}.')
 parser.add_argument('--teamwork-domain', type=str, help='Teamwork domain. Example, smthn.teamwork.com', required=True)
@@ -308,28 +308,45 @@ try:
                          'из Confluence - {}').format(e))
                     errors.exception(traceback.format_exc())
 
-                task = requests.get('https://{}/tasks/{}.json'.format(
-                    domain, event['comment']['objectId']),
-                                    headers=content_type,
-                                    auth=(token, '')).json()
+                try:
+                    task = requests.get('https://{}/tasks/{}.json'.format(
+                        domain, event['comment']['objectId']),
+                                        headers=content_type,
+                                        auth=(token, '')).json()
+                except Exception as e:
+                    errors.exception(
+                        ('Ошибка при получении информации о задаче, к которой относится комментарий - {}').format(e))
+                    errors.exception(traceback.format_exc())
 
-                requests.put('https://{}/comments/{}.json'.format(domain, event['comment']['id']),
-                             json={
-                                 'comment': {
-                                     'body': text,
-                                     'content-type': event['comment']['contentType'],
-                                 }
-                             },
-                             headers=content_type,
-                             auth=(token, ''))
+                try:
+                    requests.put('https://{}/comments/{}.json'.format(domain, event['comment']['id']),
+                                 json={
+                                     'comment': {
+                                         'body': text,
+                                         'content-type': event['comment']['contentType'],
+                                     }
+                                 },
+                                 headers=content_type,
+                                 auth=(token, ''))
+                except Exception as e:
+                    errors.exception(
+                        ('Ошибка при обновлении текста комментария - {}').format(e))
+                    errors.exception(
+                        ('Текст - {}').format(text)
+                    errors.exception(traceback.format_exc())
 
-                requests.put('https://{}/tasks/{}.json'.format(domain, task['todo-item']['id']),
-                             json={
-                               'todo-item': {
-                                   'commentFollowerIds': task['todo-item']['changeFollowerIds'],
-                               }},
-                             headers=content_type,
-                             auth=(token, ''))
+                try:
+                    requests.put('https://{}/tasks/{}.json'.format(domain, task['todo-item']['id']),
+                                 json={
+                                   'todo-item': {
+                                       'commentFollowerIds': task['todo-item']['changeFollowerIds'],
+                                   }},
+                                 headers=content_type,
+                                 auth=(token, ''))
+                except Exception as e:
+                    errors.exception(
+                        ('Ошибка при обновлении списка для уведомлений задачи - {}').format(e))
+                    errors.exception(traceback.format_exc())
 
     if __name__ == '__main__':
         print('Script started. Version ' + VERSION)
