@@ -118,20 +118,27 @@ def replace_confluence_links(text, config, task):
     regexp = r'(?P<link>[^(\"\']http[s]{,1}://%s/wiki/spaces/[a-zA-Z0-9]+/pages/(?P<content_id>[0-9]+)[/\w\.\,\+\-\_]*)' % domain.replace('.', '\.')
 
     links = dict()
+    log.debug('Найденные ссылки на confluence - {}'.format(re.findall(regexp, text)))
     for link, content_id in re.findall(regexp, text):
         link = link.strip().strip('\n').strip('<').strip('>')
         if link not in links:
-            content = requests.get(
-                'https://netping.atlassian.net/wiki/rest/api/content/{}'.format(content_id),
-                auth=(login, token)).json()
-            log.debug('Получили информацию о статье c id {} - {}'.format(taskid, content))
-            links[link] = content['title']
+            try:
+                content = requests.get(
+                    'https://netping.atlassian.net/wiki/rest/api/content/{}'.format(content_id),
+                    auth=(login, token)).json()
+                log.debug('Получили информацию о статье c id {} - {}'.format(content_id, content))
+                links[link] = content['title']
+            except Exception as ex:
+                errors.error('Ошибка получения информации о статье c id {} - {}'.format(content_id, content))
 
+    log.debug('Ссылки на confluence с заголовками статей - {}'.format(links))
     for link, title in links.items():
         if task:
             text = text.replace(link, f'[{title}]({link})')
         else:
-            text = text.replace('>' + link + '<', '>' + title + '<')
+            text = re.sub(r'(<\s*a.*>)' + link.replace('.', '\.').replace('+', '\+') + r'(\s.*)?' + '(<\s*/\s*a\s*>)',
+                          r'\1%s\3\2' % title,
+                          text)
 
     return text
 
@@ -254,7 +261,7 @@ try:
                             # ~ title = title.replace(link, t)
 
                     elif 'comment' in event:
-                        text = re.sub(r'(<\s*a.*>)' + link.replace('.', '\.') + r'(\s.*)?' + '(<\s*/\s*a\s*>)',
+                        text = re.sub(r'(<\s*a.*>)' + link.replace('.', '\.').replace('+', '\+') + r'(\s.*)?' + '(<\s*/\s*a\s*>)',
                                       r'\1%s\3\2' % title,
                                       text)
                         
@@ -264,7 +271,7 @@ try:
                         ('Ошибка при подстановке ссылки {} - {}').format(link, e))
                     errors.exception(traceback.format_exc())
                     
-            log.info('Заменено %i ссылок' % len(links) - len(errors_links))
+            log.info('Заменено %i ссылок' % (len(links) - len(errors_links)))
             
             #print(len(links))
             
@@ -335,7 +342,7 @@ try:
                 except Exception as e:
                     errors.exception(
                         ('Ошибка при обновлении текста комментария - {}').format(e))
-                    errors.exception('Текст - {}').format(text)
+                    errors.exception('Текст - {}'.format(text))
                     errors.exception(traceback.format_exc())
 
                 try:
