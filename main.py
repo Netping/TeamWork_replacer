@@ -7,7 +7,7 @@ import requests
 from bottle import post, request, run
 
 
-VERSION = '3.6'
+VERSION = '3.7'
 
 parser = argparse.ArgumentParser(description=f'Teamwork replacer {VERSION}.')
 parser.add_argument('--teamwork-domain', type=str, help='Teamwork domain. Example, smthn.teamwork.com', required=True)
@@ -168,7 +168,7 @@ try:
 
         #regexp = r'[^(\"\']http[s]{,1}://%s/[#/]{,2}tasks/[0-9]{,15}' % domain.replace('.', '\.')
         
-        regexp = r'[^(\"\']http[s]{,1}://%s/[#/]{,3}[projects/[0-9]{,15}/]?tasks/[0-9]{,15}[\?c=[0-9]{,15}]{,1}' % domain.replace('.', '\.')
+        regexp = r'[^(\"\']http[s]{,1}://%s/[#/]{,3}[projects/[0-9]{,15}]?tasks/[0-9]{,15}[\?c=[0-9]{,15}]{,1}' % domain.replace('.', '\.')
         
         #print(regexp)
         
@@ -279,86 +279,86 @@ try:
             
             #print(text_task)
 
-            if 'task' in event:
-                try:
-                    title = replace_ids(task['task']['name'], task['task']['id'],
-                                        task['task']['parentId'], config)
-                except Exception as e:
-                    title = event['task']['name']
-                    errors.exception(
-                        ('Ошибка при подстановке номеров '
-                         'текущей и родительской задач - {}').format(e))
-                    errors.exception(traceback.format_exc())
+        if 'task' in event:
+            try:
+                title = replace_ids(task['task']['name'], task['task']['id'],
+                                    task['task']['parentId'], config)
+            except Exception as e:
+                title = event['task']['name']
+                errors.exception(
+                    ('Ошибка при подстановке номеров '
+                     'текущей и родительской задач - {}').format(e))
+                errors.exception(traceback.format_exc())
 
-                try:
-                    text_task = replace_confluence_links(text_task, config, True)
-                except Exception as e:
-                    errors.exception(
-                        ('Ошибка при подстановке названий статей '
-                         'из Confluence - {}').format(e))
-                    errors.exception(traceback.format_exc())
+            try:
+                text_task = replace_confluence_links(text_task, config, True)
+            except Exception as e:
+                errors.exception(
+                    ('Ошибка при подстановке названий статей '
+                     'из Confluence - {}').format(e))
+                errors.exception(traceback.format_exc())
 
-                requests.put('https://{}/tasks/{}.json'.format(domain, event['task']['id']),
-                             json={
-                                 'todo-item': {
-                                     'description': text_task,
-                                     'content': title,
-                                 }},
-                             headers=content_type,
-                             auth=(token, ''))
+            requests.put('https://{}/tasks/{}.json'.format(domain, event['task']['id']),
+                         json={
+                             'todo-item': {
+                                 'description': text_task,
+                                 'content': title,
+                             }},
+                         headers=content_type,
+                         auth=(token, ''))
 
-            elif 'comment' in event:
-                try:
-                    text = replace_confluence_links(text, config, False)
-                except Exception as e:
-                    errors.exception(
-                        ('Ошибка при подстановке названий статей '
-                         'из Confluence - {}').format(e))
-                    errors.exception(traceback.format_exc())
+        elif 'comment' in event:
+            try:
+                text = replace_confluence_links(text, config, False)
+            except Exception as e:
+                errors.exception(
+                    ('Ошибка при подстановке названий статей '
+                     'из Confluence - {}').format(e))
+                errors.exception(traceback.format_exc())
 
-                try:
-                    task = requests.get('https://{}/tasks/{}.json'.format(
-                        domain, event['comment']['objectId']),
+            try:
+                task = requests.get('https://{}/tasks/{}.json'.format(
+                    domain, event['comment']['objectId']),
+                                    headers=content_type,
+                                    auth=(token, '')).json()
+                log.debug('Получили информацию о задаче c id {} - {}'.format(event['comment']['objectId'], task))
+            except Exception as e:
+                errors.exception(
+                    ('Ошибка при получении информации о задаче, к которой относится комментарий - {}').format(e))
+                errors.exception(traceback.format_exc())
+
+            try:
+                log.debug('Новый текст комментария - {}'.format(text))
+                response = requests.put('https://{}/comments/{}.json'.format(domain, event['comment']['id']),
+                                        json={
+                                            'comment': {
+                                                'body': text,
+                                                'content-type': event['comment']['contentType'],
+                                            }
+                                        },
                                         headers=content_type,
-                                        auth=(token, '')).json()
-                    log.debug('Получили информацию о задаче c id {} - {}'.format(event['comment']['objectId'], task))
-                except Exception as e:
-                    errors.exception(
-                        ('Ошибка при получении информации о задаче, к которой относится комментарий - {}').format(e))
-                    errors.exception(traceback.format_exc())
+                                        auth=(token, ''))
+                log.debug('Обновили текст комментария - {}'.format(response.json()))
+            except Exception as e:
+                errors.exception(
+                    ('Ошибка при обновлении текста комментария - {}').format(e))
+                errors.exception('Текст - {}'.format(text))
+                errors.exception(traceback.format_exc())
 
-                try:
-                    log.debug('Новый текст комментария - {}'.format(text))
-                    response = requests.put('https://{}/comments/{}.json'.format(domain, event['comment']['id']),
-                                            json={
-                                                'comment': {
-                                                    'body': text,
-                                                    'content-type': event['comment']['contentType'],
-                                                }
-                                            },
-                                            headers=content_type,
-                                            auth=(token, ''))
-                    log.debug('Обновили текст комментария - {}'.format(response.json()))
-                except Exception as e:
-                    errors.exception(
-                        ('Ошибка при обновлении текста комментария - {}').format(e))
-                    errors.exception('Текст - {}'.format(text))
-                    errors.exception(traceback.format_exc())
-
-                try:
-                    log.debug('Cписок для уведомлений задачи {} - {}'.format(task['todo-item']['id'], task['todo-item']['changeFollowerIds']))
-                    response = requests.put('https://{}/tasks/{}.json'.format(domain, task['todo-item']['id']),
-                                            json={
-                                              'todo-item': {
-                                                  'commentFollowerIds': task['todo-item']['changeFollowerIds'],
-                                              }},
-                                            headers=content_type,
-                                            auth=(token, ''))
-                    log.debug('Обновили список для уведомлений задачи {} - {}'.format(task['todo-item']['id'], response.json()))
-                except Exception as e:
-                    errors.exception(
-                        ('Ошибка при обновлении списка для уведомлений задачи - {}').format(e))
-                    errors.exception(traceback.format_exc())
+            try:
+                log.debug('Cписок для уведомлений задачи {} - {}'.format(task['todo-item']['id'], task['todo-item']['changeFollowerIds']))
+                response = requests.put('https://{}/tasks/{}.json'.format(domain, task['todo-item']['id']),
+                                        json={
+                                          'todo-item': {
+                                              'commentFollowerIds': task['todo-item']['changeFollowerIds'],
+                                          }},
+                                        headers=content_type,
+                                        auth=(token, ''))
+                log.debug('Обновили список для уведомлений задачи {} - {}'.format(task['todo-item']['id'], response.json()))
+            except Exception as e:
+                errors.exception(
+                    ('Ошибка при обновлении списка для уведомлений задачи - {}').format(e))
+                errors.exception(traceback.format_exc())
 
     if __name__ == '__main__':
         print('Script started. Version ' + VERSION)
