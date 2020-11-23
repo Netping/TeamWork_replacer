@@ -124,6 +124,7 @@ def replace_confluence_links(text, config, task):
             content = requests.get(
                 'https://netping.atlassian.net/wiki/rest/api/content/{}'.format(content_id),
                 auth=(login, token)).json()
+            log.debug('Получили информацию о статье c id {} - {}'.format(taskid, content))
             links[link] = content['title']
 
     for link, title in links.items():
@@ -313,36 +314,40 @@ try:
                         domain, event['comment']['objectId']),
                                         headers=content_type,
                                         auth=(token, '')).json()
+                    log.debug('Получили информацию о задаче c id {} - {}'.format(event['comment']['objectId'], task))
                 except Exception as e:
                     errors.exception(
                         ('Ошибка при получении информации о задаче, к которой относится комментарий - {}').format(e))
                     errors.exception(traceback.format_exc())
 
                 try:
-                    requests.put('https://{}/comments/{}.json'.format(domain, event['comment']['id']),
-                                 json={
-                                     'comment': {
-                                         'body': text,
-                                         'content-type': event['comment']['contentType'],
-                                     }
-                                 },
-                                 headers=content_type,
-                                 auth=(token, ''))
+                    log.debug('Новый текст комментария - {}'.format(text))
+                    response = requests.put('https://{}/comments/{}.json'.format(domain, event['comment']['id']),
+                                            json={
+                                                'comment': {
+                                                    'body': text,
+                                                    'content-type': event['comment']['contentType'],
+                                                }
+                                            },
+                                            headers=content_type,
+                                            auth=(token, ''))
+                    log.debug('Обновили текст комментария - {}'.format(response.json()))
                 except Exception as e:
                     errors.exception(
                         ('Ошибка при обновлении текста комментария - {}').format(e))
-                    errors.exception(
-                        ('Текст - {}').format(text)
+                    errors.exception('Текст - {}').format(text)
                     errors.exception(traceback.format_exc())
 
                 try:
-                    requests.put('https://{}/tasks/{}.json'.format(domain, task['todo-item']['id']),
-                                 json={
-                                   'todo-item': {
-                                       'commentFollowerIds': task['todo-item']['changeFollowerIds'],
-                                   }},
-                                 headers=content_type,
-                                 auth=(token, ''))
+                    log.debug('Cписок для уведомлений задачи {} - {}'.format(task['todo-item']['id'], task['todo-item']['changeFollowerIds']))
+                    response = requests.put('https://{}/tasks/{}.json'.format(domain, task['todo-item']['id']),
+                                            json={
+                                              'todo-item': {
+                                                  'commentFollowerIds': task['todo-item']['changeFollowerIds'],
+                                              }},
+                                            headers=content_type,
+                                            auth=(token, ''))
+                    log.debug('Обновили список для уведомлений задачи {} - {}'.format(task['todo-item']['id'], response.json()))
                 except Exception as e:
                     errors.exception(
                         ('Ошибка при обновлении списка для уведомлений задачи - {}').format(e))
