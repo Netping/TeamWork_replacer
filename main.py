@@ -73,8 +73,11 @@ def replace_ids(text, task_id, parent_id, config):
         - %idf% with unique parent task number, current if haven't parent.
 
     Args:
-        - task - task object, recieved on webhook, dict;
-        - config - config from ini file, dict;
+        - text -- original text;
+        - task_id -- task identifier;
+        - parent_id -- parent task identifier, original.
+                       If parent have another parent, looking for top;
+        - config -- config from cli, dict;
 
     return task title with raplaces str
     """
@@ -93,8 +96,7 @@ def replace_ids(text, task_id, parent_id, config):
     else:
         parent_id = task_id
         
-    return task['task']['name'].replace('\%idf\%', parent_id).replace(
-        '\%id\%', task_id)
+    return text.replace('\%idf\%', parent_id).replace('\%id\%', task_id)
 
 
 def replace_confluence_links(text, config, task):
@@ -103,9 +105,9 @@ def replace_confluence_links(text, config, task):
     Working only with cloud confluence.
 
     Args:
-        - text - processing text, str;
-        - config - config from ini file, dict;
-        - is_task - processing text from task description(True)
+        - text -- processing text, str;
+        - config -- config from ini file, dict;
+        - is_task -- processing text from task description(True)
                     or from comment(False), boolean;
 
     return processed text, str.
@@ -282,8 +284,8 @@ try:
 
         if 'task' in event:
             try:
-                title = replace_ids(task['task']['name'], task['task']['id'],
-                                    task['task']['parentId'], config)
+                title = replace_ids(event['task']['name'], event['task']['id'],
+                                    event['task']['parentId'], config)
             except Exception as e:
                 title = event['task']['name']
                 errors.exception(
@@ -299,7 +301,7 @@ try:
                      'из Confluence - {}').format(e))
                 errors.exception(traceback.format_exc())
 
-            if original_text != text_task or title != task['task']['name']:
+            if original_text != text_task or title != event['task']['name']:
                 requests.put('https://{}/tasks/{}.json'.format(domain, event['task']['id']),
                              json={
                                  'todo-item': {
