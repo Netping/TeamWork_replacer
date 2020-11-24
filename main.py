@@ -163,6 +163,7 @@ try:
             text = event['comment']['body']
 
         text = ' ' + text # фикс регулярки
+        original_text = str(text)
         
         #print(text)
 
@@ -298,14 +299,15 @@ try:
                      'из Confluence - {}').format(e))
                 errors.exception(traceback.format_exc())
 
-            requests.put('https://{}/tasks/{}.json'.format(domain, event['task']['id']),
-                         json={
-                             'todo-item': {
-                                 'description': text_task,
-                                 'content': title,
-                             }},
-                         headers=content_type,
-                         auth=(token, ''))
+            if original_text != text_task or title != task['task']['name']:
+                requests.put('https://{}/tasks/{}.json'.format(domain, event['task']['id']),
+                             json={
+                                 'todo-item': {
+                                     'description': text_task,
+                                     'content': title,
+                                 }},
+                             headers=content_type,
+                             auth=(token, ''))
 
         elif 'comment' in event:
             try:
@@ -316,49 +318,50 @@ try:
                      'из Confluence - {}').format(e))
                 errors.exception(traceback.format_exc())
 
-            try:
-                task = requests.get('https://{}/tasks/{}.json'.format(
-                    domain, event['comment']['objectId']),
-                                    headers=content_type,
-                                    auth=(token, '')).json()
-                log.debug('Получили информацию о задаче c id {} - {}'.format(event['comment']['objectId'], task))
-            except Exception as e:
-                errors.exception(
-                    ('Ошибка при получении информации о задаче, к которой относится комментарий - {}').format(e))
-                errors.exception(traceback.format_exc())
-
-            try:
-                log.debug('Новый текст комментария - {}'.format(text))
-                response = requests.put('https://{}/comments/{}.json'.format(domain, event['comment']['id']),
-                                        json={
-                                            'comment': {
-                                                'body': text,
-                                                'content-type': event['comment']['contentType'],
-                                            }
-                                        },
+            if original_text != text:
+                try:
+                    task = requests.get('https://{}/tasks/{}.json'.format(
+                        domain, event['comment']['objectId']),
                                         headers=content_type,
-                                        auth=(token, ''))
-                log.debug('Обновили текст комментария - {}'.format(response.json()))
-            except Exception as e:
-                errors.exception(
-                    ('Ошибка при обновлении текста комментария - {}').format(e))
-                errors.exception('Текст - {}'.format(text))
-                errors.exception(traceback.format_exc())
+                                        auth=(token, '')).json()
+                    log.debug('Получили информацию о задаче c id {} - {}'.format(event['comment']['objectId'], task))
+                except Exception as e:
+                    errors.exception(
+                        ('Ошибка при получении информации о задаче, к которой относится комментарий - {}').format(e))
+                    errors.exception(traceback.format_exc())
 
-            try:
-                log.debug('Cписок для уведомлений задачи {} - {}'.format(task['todo-item']['id'], task['todo-item']['changeFollowerIds']))
-                response = requests.put('https://{}/tasks/{}.json'.format(domain, task['todo-item']['id']),
-                                        json={
-                                          'todo-item': {
-                                              'commentFollowerIds': task['todo-item']['changeFollowerIds'],
-                                          }},
-                                        headers=content_type,
-                                        auth=(token, ''))
-                log.debug('Обновили список для уведомлений задачи {} - {}'.format(task['todo-item']['id'], response.json()))
-            except Exception as e:
-                errors.exception(
-                    ('Ошибка при обновлении списка для уведомлений задачи - {}').format(e))
-                errors.exception(traceback.format_exc())
+                try:
+                    log.debug('Новый текст комментария - {}'.format(text))
+                    response = requests.put('https://{}/comments/{}.json'.format(domain, event['comment']['id']),
+                                            json={
+                                                'comment': {
+                                                    'body': text,
+                                                    'content-type': event['comment']['contentType'],
+                                                }
+                                            },
+                                            headers=content_type,
+                                            auth=(token, ''))
+                    log.debug('Обновили текст комментария - {}'.format(response.json()))
+                except Exception as e:
+                    errors.exception(
+                        ('Ошибка при обновлении текста комментария - {}').format(e))
+                    errors.exception('Текст - {}'.format(text))
+                    errors.exception(traceback.format_exc())
+
+                try:
+                    log.debug('Cписок для уведомлений задачи {} - {}'.format(task['todo-item']['id'], task['todo-item']['changeFollowerIds']))
+                    response = requests.put('https://{}/tasks/{}.json'.format(domain, task['todo-item']['id']),
+                                            json={
+                                              'todo-item': {
+                                                  'commentFollowerIds': task['todo-item']['changeFollowerIds'],
+                                              }},
+                                            headers=content_type,
+                                            auth=(token, ''))
+                    log.debug('Обновили список для уведомлений задачи {} - {}'.format(task['todo-item']['id'], response.json()))
+                except Exception as e:
+                    errors.exception(
+                        ('Ошибка при обновлении списка для уведомлений задачи - {}').format(e))
+                    errors.exception(traceback.format_exc())
 
     if __name__ == '__main__':
         print('Script started. Version ' + VERSION)
