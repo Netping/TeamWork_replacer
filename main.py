@@ -7,7 +7,7 @@ import requests
 from bottle import post, request, run
 
 
-VERSION = '3.7'
+VERSION = '3.8'
 
 parser = argparse.ArgumentParser(description=f'Teamwork replacer {VERSION}.')
 parser.add_argument('--teamwork-domain', type=str, help='Teamwork domain. Example, smthn.teamwork.com', required=True)
