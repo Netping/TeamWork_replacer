@@ -96,7 +96,7 @@ def replace_ids(text, task_id, parent_id, config):
     else:
         parent_id = task_id
         
-    return text.replace('\%idf\%', parent_id).replace('\%id\%', task_id)
+    return text.replace('\%idf\%', str(parent_id)).replace('\%id\%', str(task_id))
 
 
 def replace_confluence_links(text, config, task):
@@ -183,6 +183,7 @@ try:
         
         text_array_new = []
         errors_links = []
+        text_task = text
 
         if links != []:
             for link in links:
