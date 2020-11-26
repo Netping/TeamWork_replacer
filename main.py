@@ -13,7 +13,7 @@ import requests
 from bottle import Bottle, request
 
 
-VERSION = '3.8'
+VERSION = '3.9'
 
 formatter = logging.Formatter('%(levelname)s %(asctime)s %(message)s')
 
