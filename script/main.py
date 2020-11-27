@@ -36,9 +36,12 @@ def get_teamwork_regexp(domain):
         - domain -- Teamwork domain without protocols and uri.
                     Example, netping.teamwork.com
     """
-    return (r'(?P<link>[^(\"\']http[s]{,1}://%s/'
-            r'[#/]{,3}[projects/[0-9]{,15}]?tasks/(?P<id>[0-9]{,15})'
-            r'[\?c=[0-9]{,15}]{,1})') % (domain.replace(r'.', r'\.'))
+    # return (r'(?P<link>[^(\"\']http[s]{,1}://%s/'
+    #         r'[#/]{,3}[projects/[0-9]{,15}]?tasks/(?P<id>[0-9]{,15})'
+    #         r'[\?c=[0-9]{,15}]{,1})') % (domain.replace(r'.', r'\.'))
+    return (r'(?P<link>[^(\"\']http[s]?://%s/'
+            r'#?/?(projects/[0-9]+/)?tasks/(?P<id>[0-9]+)'
+            r'(\?c=[0-9]+)?)') % (domain.replace(r'.', r'\.'))
 
 
 def get_confluence_regexp(domain):
@@ -275,7 +278,8 @@ def replace_links(regexp, text, get_info, is_task):
     """
     log.info('Замена ссылок')
     links = dict()
-    found = re.findall(regexp, text)
+    regexp = re.compile(regexp)
+    found = [(ln.group('link'), ln.group('id')) for ln in regexp.finditer(text)]
     log.info('Найденные ссылки - %s', str(found))
     for link, content_id in found:
         link = link.strip().strip('\n').strip('<').strip('>')
@@ -298,8 +302,8 @@ def replace_links(regexp, text, get_info, is_task):
         else:
             link = link.replace(r'.', r'\.').replace(r'+', r'\+').replace(
                 r'?', r'\?').replace(r'=', r'\=')
-            link_regexp = ((r'(<\s*a[\w\d\"\'\_\n\t\+/\\\.:\=\-\#\t\n\s]*>)'
-                            r'([\w\d\"\'\_\n\t\+/\\\.:\=\-\#\t\n\s]*)?\s?') +
+            link_regexp = ((r'(<\s*a[\w\d\"\'\_\n\t\+/\\\.:\=\-\#\?\t\n\s]*>)'
+                            r'([\w\d\"\'\_\n\t\+/\\\.:\=\-\#\?\t\n\s]*)?\s?') +
                            link + r'(\s.*)?' + r'(<\s*/\s*a\s*>)')
             text = re.sub(link_regexp, r'\2\1%s\4\3' % title, text)
 
