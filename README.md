@@ -6,5 +6,6 @@ Documentation: https://netping.atlassian.net/wiki/spaces/PROJ/pages/1852866561/I
 Рекомендуется для каждой новой функции или при обнаружении нового бага сперва писать тест.
 Запуск
 ```bash
+cd script
 python -m unittest replacer_test.py
 ```
